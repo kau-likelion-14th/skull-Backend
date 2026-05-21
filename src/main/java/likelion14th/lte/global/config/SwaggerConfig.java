@@ -1,8 +1,8 @@
 package likelion14th.lte.global.config;
 
 import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -21,6 +21,7 @@ public class SwaggerConfig {
                 .version("v1.0.0")
                 .title("LTE API")
                 .description("Lte API Documentation");
+
         String jwtSchemeName = "BearerToken";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
         Components components = new Components()
@@ -29,22 +30,27 @@ public class SwaggerConfig {
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT"));
+
         Server localServer = new Server()
-                    .url("http://localhost:8080")
-                    .description("Local Server");
+                .url("http://localhost:8080")
+                .description("Lte Local Server");
+
+        Server httpServer = new Server()
+                .url("http://Lte-dev-env-2.eba-xaqgpxhu.ap-northeast-2.elasticbeanstalk.com")
+                .description("LTE HTTP Server");
 
         return new OpenAPI()
                 .info(apiInfo)
                 .addSecurityItem(securityRequirement)
                 .components(components)
-                .servers(List.of(localServer));
-}
+                .servers(List.of(localServer, httpServer));
+    }
 
-@Bean
-public GroupedOpenApi allGroup() {
-    return GroupedOpenApi.builder()
-            .group("All APIs")
-            .pathsToMatch("/**")
-            .build();
-}
+    @Bean
+    public GroupedOpenApi allGroup() {
+        return GroupedOpenApi.builder()
+                .group("All APIs")
+                .pathsToMatch("/**")
+                .build();
+    }
 }
