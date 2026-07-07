@@ -2,7 +2,11 @@ package likelion14th.lte.user.entity;
 
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
+import likelion14th.lte.follow.entity.Follow;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -42,11 +46,22 @@ public class User extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String s3ImageKey;
 
+    @OneToMany(mappedBy = "toUser",fetch = FetchType.LAZY,cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Follow> followers;
+
+    @OneToMany(mappedBy = "fromUser",fetch = FetchType.LAZY,cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Follow> followings;
+
+
+
+
     @Builder(access = AccessLevel.PUBLIC)
     private User (String username, String userTag, String introduction){
         this.username = username;
         this.userTag = userTag;
         this.introduction = introduction;
+        this.followers = new ArrayList<>();
+        this.followings = new ArrayList<>();
     }
 
     // [Q3. @Setter를 위 @Getter 처럼 사용하면 모든 멤버들에 setIntroduction() 같은 setter 메서드가 생성됩니다.
