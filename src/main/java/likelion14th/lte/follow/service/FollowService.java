@@ -25,7 +25,7 @@ public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
 
-    //백다혜#CORIM, 백다혜, #CORIM
+
     private static UserNameDto getUserNameDto(String userName) {
         if (!userName.contains("#")) {
             return new UserNameDto(userName, null);
@@ -86,6 +86,59 @@ public class FollowService {
                 .toList();
 
         return new PageImpl<>(canFollowUsers,pageable,canFollowUsers.size()).map(FollowUserResponse::from);
+    }
+
+    @Transactional
+    public void unfollow(Long fromUserId, Long toUserId){
+
+        User fromUser = userRepository.findById(fromUserId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+        User toUser = userRepository.findById(toUserId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.FOLLOW_TARGET_NOT_FOUND));
+        if (fromUser.getId().equals(toUser.getId())) {
+            throw new GeneralException(ErrorCode.FOLLOW_SELF_NOT_ALLOWED);
+        }
+        Follow follow = followRepository.findByFromUserAndToUser(fromUser, toUser)
+                .orElseThrow(() -> new GeneralException(ErrorCode.FOLLOW_NOT_FOUND));
+        followRepository.delete(follow);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowUserResponse> getFollowers(Long userId){
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        List<Follow> followers = followRepository.findByToUser(user);
+
+        return followers.stream()
+                .map(follow -> FollowUserResponse.from(follow.getFromUser()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowUserResponse> getFollowings(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        List<Follow> followings = followRepository.findByFromUser(user);
+
+        return followings.stream()
+                .map(follow -> FollowUserResponse.from(follow.getToUser()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FollowUserResponse> getCanFollowUsers(Long userId, Pageable pageable){
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        Page<User> users = userRepository.findCanFollowUser(userId, pageable);
+
+        return users.map(FollowUserResponse::from);
     }
 
 }
