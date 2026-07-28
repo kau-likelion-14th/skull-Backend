@@ -3,6 +3,7 @@ package likelion14th.lte.user.entity;
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
 import likelion14th.lte.follow.entity.Follow;
+import likelion14th.lte.statistic.entity.Statistic;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -16,6 +17,10 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "statistic_id")
+    private Statistic statistic;
 
     @Column(nullable = false)
     private String username;
@@ -48,6 +53,7 @@ public class User extends BaseEntity {
         this.introduction = introduction;
         this.followers = new ArrayList<>();
         this.followings = new ArrayList<>();
+        this.statistic = Statistic.create();
     }
 
     public void updateIntroduction(String introduction){
