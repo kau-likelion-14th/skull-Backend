@@ -16,7 +16,7 @@ public class StatisticController {
 
     @GetMapping
     public ResponseEntity<StatisticResponse> getStatistic(
-            @RequestParam Long userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
 
         return ResponseEntity.ok(
