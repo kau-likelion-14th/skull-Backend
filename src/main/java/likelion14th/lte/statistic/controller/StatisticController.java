@@ -4,6 +4,8 @@ import likelion14th.lte.statistic.dto.StatisticResponse;
 import likelion14th.lte.statistic.service.StatisticService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +20,7 @@ public class StatisticController {
     public ResponseEntity<StatisticResponse> getStatistic(
             @AuthenticationPrincipal Jwt jwt
     ) {
+        Long userId = Long.valueOf(jwt.getSubject());
 
         return ResponseEntity.ok(
                 statisticService.getStatistic(userId)
