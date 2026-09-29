@@ -1,5 +1,10 @@
 package likelion14th.lte.user.service;
 
+import jdk.jshell.execution.Util;
+import likelion14th.lte.utils.Image.ImageUtil;
+import likelion14th.lte.utils.S3.S3Dto;
+import likelion14th.lte.utils.S3.S3Utils;
+import likelion14th.lte.utils.exception.UtilException;
 import org.springframework.transaction.annotation.Transactional;
 import likelion14th.lte.global.api.ErrorCode;
 import likelion14th.lte.global.exception.GeneralException;
@@ -10,11 +15,16 @@ import likelion14th.lte.user.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import likelion14th.lte.user.dto.request.UserIntroRequest;
+import java.awt.*;
 
 @Service
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserProfileService {
     private final UserRepository userRepository;
+    private final S3Utils s3Utils;
+    private final ImageUtil imageUtil;
 
     @Transactional
     public UserProfileResponse createTestUser(CreateTestUserRequest request){
@@ -40,5 +50,81 @@ public class UserProfileService {
                 .orElseThrow(()-> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
         return UserProfileResponse.from(user);
+    }
+
+    @Transactional
+    public UserProfileResponse putProfileImage(Long userId, MultipartFile file){
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new GeneralException(ErrorCode.USER_NOT_FOUND));
+        try {
+            imageUtil.validateImage(file);
+            ImageUtil.ResizedImage resizedImage =
+                    imageUtil.resizeProfileToPngBytes(file,256);
+            String originalFilename = file.getOriginalFilename();
+            String baseName = originalFilename.contains(".")
+                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : originalFilename;
+            S3Dto result =
+                    s3Utils.uploadBytes(resizedImage.bytes(), baseName+".png",resizedImage.contentType());
+            if(user.getS3ImageKey()!=null){
+                s3Utils.deleteFile(user.getS3ImageKey());
+            }
+            user.fixUserProfile(result.getUrl(),result.getKey());
+            return UserProfileResponse.from(user);
+        } catch (UtilException e){
+            throw GeneralException.of(mapToErrorCode(e.getReason()));
+        }
+    }
+
+    @Transactional
+    public UserProfileResponse deleteProfileImage(Long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        if(user.getS3ImageKey() != null){
+            try {
+                s3Utils.deleteFile(user.getS3ImageKey());
+            } catch (UtilException e) {
+                throw GeneralException.of(mapToErrorCode(e.getReason()));
+            }
+        }
+
+        user.fixUserProfile(null, null);
+
+        return UserProfileResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getOtherUserProfile(Long userId, Long toUserId){
+        User user = userRepository.findById(toUserId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        return UserProfileResponse.from(user);
+    }
+
+    @Transactional
+    public UserProfileResponse updateIntroduction(
+            Long userId,
+            UserIntroRequest request
+    ){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateIntroduction(request.getIntroduce());
+
+        return UserProfileResponse.from(user);
+    }
+
+    private ErrorCode mapToErrorCode(UtilException.Reason reason) {
+        return switch (reason) {
+            case FILE_EMPTY -> ErrorCode.IMAGE_FILE_EMPTY;
+            case FILE_TOO_LARGE -> ErrorCode.IMAGE_TOO_LARGE;
+            case TYPE_NOT_ALLOWED -> ErrorCode.IMAGE_TYPE_NOT_ALLOWED;
+
+            case IMAGE_PROCESS_FAILED -> ErrorCode.IMAGE_PROCESS_FAILED;
+
+            case S3_UPLOAD_FAILED -> ErrorCode.S3_UPLOAD_FAILED;
+            case S3_DELETE_FAILED -> ErrorCode.S3_DELETE_FAILED;
+        };
     }
 }
