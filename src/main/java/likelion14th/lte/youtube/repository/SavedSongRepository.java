@@ -15,4 +15,5 @@ public interface SavedSongRepository extends JpaRepository<SavedSong,Long> {
 
     List<SavedSong> findAllByUserOrderBySavedAtDesc(User user);
 
+    List<SavedSong> userId(Long userId);
 }
