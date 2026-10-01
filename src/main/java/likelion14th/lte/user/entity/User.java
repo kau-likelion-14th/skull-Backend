@@ -3,7 +3,9 @@ package likelion14th.lte.user.entity;
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
 import likelion14th.lte.follow.entity.Follow;
+import likelion14th.lte.login.domain.RefreshToken;
 import likelion14th.lte.statistic.entity.Statistic;
+import likelion14th.lte.youtube.domain.SavedSong;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -17,6 +19,9 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true)
+    private String providerId;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "statistic_id")
@@ -43,17 +48,29 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "fromUser",fetch = FetchType.LAZY,cascade = CascadeType.ALL,orphanRemoval = true)
     private List<Follow> followings;
 
+    @OneToMany(mappedBy = "user",fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SavedSong> savedSongs;
 
-
+    @OneToOne(mappedBy = "user",cascade = CascadeType.ALL,orphanRemoval = true)
+    private RefreshToken refreshToken;
 
     @Builder(access = AccessLevel.PUBLIC)
-    private User (String username, String userTag, String introduction){
+    private User (String providerId,String username, String userTag, String introduction,String s3ImageKey,String profileImage){
         this.username = username;
         this.userTag = userTag;
         this.introduction = introduction;
+        this.s3ImageKey = s3ImageKey;
+        this.profileImage = profileImage;
         this.followers = new ArrayList<>();
         this.followings = new ArrayList<>();
         this.statistic = Statistic.create();
+        this.savedSongs = new ArrayList<>();
+        this.providerId = providerId;
+
+    }
+    public void fixUserProfile(String s3ImageUrl, String s3ImageKey){
+        this.s3ImageKey = s3ImageKey;
+        this.profileImage = s3ImageUrl;
     }
 
     public void updateIntroduction(String introduction){
