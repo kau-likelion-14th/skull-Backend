@@ -34,7 +34,7 @@ public class YouTubeController {
         return ApiResponse.onSuccess(SuccessCode.OK, youTubeService.saveSong(req.getSongId()));
     }
 
-    @PostMapping("/me")
+    @GetMapping("/me")
     @Operation(summary = "내가 저장한 곡 조회")
     public ApiResponse<List<SavedSongResponse>> myList() {
         return ApiResponse.onSuccess(SuccessCode.OK, youTubeService.mySavedSongs());
