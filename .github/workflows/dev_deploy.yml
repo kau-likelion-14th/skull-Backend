@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'pull_request' &&
       github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main')
+      github.event.pull_request.base.ref == 'develop')
       || github.event_name == 'workflow_dispatch'
     # develop branch로 pr 요청되고 merge가 되면 작동
 
